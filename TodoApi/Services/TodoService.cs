@@ -27,7 +27,7 @@ namespace TodoApi.Services
 			var itemToDelete = todos.FirstOrDefault(x => x.Id == id);
 			if (itemToDelete is null)
 				throw new ArgumentException($"Invalid id:{id}");			 
-				isDeleted = todos.Remove(itemToDelete);			
+			isDeleted = todos.Remove(itemToDelete);			
 			return await Task.FromResult(isDeleted);
 		}
 
