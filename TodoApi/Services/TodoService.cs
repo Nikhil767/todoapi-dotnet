@@ -15,6 +15,8 @@ namespace TodoApi.Services
 
 		public async Task<TodoItem> CreateTodo(TodoItem todoItem)
 		{
+			if (todoItem is null || todoItem.Title?.Length < 1)
+				throw new ArgumentException("Invalid request dto");
 			var newId = todos.Count == 0 ? 1 : todos.Max(t => t.Id) + 1;
 			var todo = new TodoItem(newId, todoItem.Title, false);
 			todos.Add(todo);
