@@ -1,0 +1,178 @@
+# =============================================================================
+# WORKFLOW CONFIGURATION
+# =============================================================================
+name: .NET 10 & Docker CI/CD Pipeline
+
+# Defines the events that trigger this automation pipeline
+on:
+  push:
+    branches:
+      - dev  # This workflow will ONLY execute when code is pushed to the 'dev' branch
+
+# Global environment variables accessible across all jobs
+env:
+  DOTNET_VERSION: '10.0.x'                             # Target .NET SDK version
+  DOCKER_IMAGE_NAME: 'learningm0nster/todoapi-dotnet'  # Target Docker Hub repository
+
+# Permissions block required for the pipeline to safely interact with GitHub features
+permissions:
+  pull-requests: write # Required to automatically open Pull Requests
+  contents: write      # Required to read repository code and interact with git branches
+
+# =============================================================================
+# PIPELINE JOBS
+# =============================================================================
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # JOB 1: CONTINUOUS INTEGRATION (CI)
+  # Purpose: Compiles code, restores packages, and verifies application stability
+  # ---------------------------------------------------------------------------
+  continuous-integration:
+    name: Code Integration & Testing
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Download repository source code onto the runner
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      # Step 2: Install specified .NET SDK version onto the runner
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # Step 3: Fetch and download required NuGet dependencies
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Step 4: Compile the application using Release configuration
+      - name: Build application
+        run: dotnet build --no-restore --configuration Release
+
+      # Step 5: Execute all automated test projects in the solution
+      - name: Run automated tests
+        run: dotnet test --no-build --verbosity normal
+
+
+  # ---------------------------------------------------------------------------
+  # JOB 2: CONTINUOUS DEPLOYMENT (CD)
+  # Purpose: Builds the production-ready Docker image and pushes it to Docker Hub
+  # ---------------------------------------------------------------------------
+  continuous-deployment:
+    name: Dockerize & Push Image
+    runs-on: ubuntu-latest
+    needs: continuous-integration # Only runs if the CI stage completes successfully
+
+    steps:
+      # Step 1: Download repository source code onto the runner
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Docker Buildx to leverage advanced container build caching
+      - name: Set up Docker Buildx
+        uses: actions/docker-setup-buildx-action@v3
+
+      # Step 3: Authenticate with Docker Hub using securely stored repository secrets
+      - name: Log in to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Step 4: Calculate dynamic, semantic tagging for the container image
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # Step 5: Build image from Dockerfile and upload to the registry using layer caching
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+
+  # ---------------------------------------------------------------------------
+  # JOB 3: INTEGRATION TESTING / DEPLOYMENT VERIFICATION
+  # Purpose: Pulls the newly built image, fires up a container, and hits live endpoints
+  # ---------------------------------------------------------------------------
+  test-deployment:
+    name: Verify Deployed Image
+    runs-on: ubuntu-latest
+    needs: continuous-deployment # FIXED: Pointed to the correct preceding job ID
+
+    steps:
+      # Step 1: Download the dev image we just uploaded to Docker Hub
+      - name: Pull Docker image
+        run: docker pull ${{ env.DOCKER_IMAGE_NAME }}:dev # FIXED: Replaced latest with dev
+
+      # Step 2: Launch the container locally on the runner in isolated background mode
+      - name: Run Docker container
+        run: |
+          docker run -d \
+            --name todo-api-test \
+            -p 8080:8080 \
+            ${{ env.DOCKER_IMAGE_NAME }}:dev
+
+      # Step 3: Grace period allowing the .NET application runtime boot-up to complete
+      - name: Wait for container startup
+        run: sleep 10
+
+      # Step 4: Execute health probing check against the container to confirm network responsiveness
+      - name: Test API health
+        run: |
+          curl -f http://localhost:8080/swagger/index.html || curl -f http://localhost:8080/ || exit 1
+          echo "✅ API is responding successfully!"
+
+      # Step 5: Tear down the testing infrastructure container to clean up resources
+      - name: Cleanup Container
+        if: always() # Guarantees execution even if the web probes fail
+        run: |
+          docker stop todo-api-test || true
+          docker rm todo-api-test || true
+
+
+  # ---------------------------------------------------------------------------
+  # JOB 4: AUTOMATED MANAGEMENT
+  # Purpose: Creates a clean Pull Request to merge validated code into main
+  # ---------------------------------------------------------------------------
+  create-pull-request:
+    name: Generate Production PR
+    runs-on: ubuntu-latest
+    needs: [continuous-integration, continuous-deployment, test-deployment]
+
+    steps:
+      # Step 1: Download repository source code onto the runner
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      # Step 2: Process repository history and leverage GitHub CLI to structure the PR
+      - name: Create Pull Request from dev to main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Query existing open PRs to prevent generating redundant requests
+          PR_EXISTS=$(gh pr list --head dev --base main --json number --jq '.[0].number')
+          
+          if [ -z "$PR_EXISTS" ]; then
+            echo "No open Pull Request found. Creating a new one..."
+            gh pr create \
+              --title "Automated PR: Merge dev into main (Build #${{ github.run_number }})" \
+              --body "This PR was automatically generated by GitHub Actions after all CI/CD tests passed successfully on the dev branch." \
+              --head dev \
+              --base main
+          else
+            echo "An open Pull Request already exists (PR #$PR_EXISTS). Skipping PR creation."
+          fi
