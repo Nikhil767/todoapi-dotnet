@@ -57,6 +57,8 @@ namespace TodoApi.Services
 			var existing = todos.FirstOrDefault(t => t.Id == id);
 			if (existing is null)
 				throw new ArgumentException($"Invalid id:{id}");
+			if (todoItem is null || todoItem.Title?.Length < 1)
+				throw new ArgumentException("Invalid request dto");
 			var updated = existing with
 			{
 				Title = todoItem.Title,
