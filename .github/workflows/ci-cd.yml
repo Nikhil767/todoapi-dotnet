@@ -8,6 +8,12 @@ on:
   push:
     branches:
       - dev  # This workflow will ONLY execute when code is pushed to the 'dev' branch
+    paths:
+      - 'src/**'         # Triggers ONLY if files inside the src directory change
+      - '**.csproj'      # Or if a project file changes
+      - '**.slnx'        # Or if your solution file changes
+  schedule:
+    - cron: '0 0 * * 0' # Runs automatically every Sunday at midnight to check for updates!
 
 # Global environment variables accessible across all jobs
 env:
