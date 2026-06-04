@@ -18,8 +18,8 @@ on:
       - '.dockerignore'     # Do NOT run if only git tracking files changed
       - 'LICENSE'        # Do NOT run if license files changed
       - 'docs/**'        # Do NOT run if you have a local documentation folder
-  schedule:
-    - cron: '0 0 * * 0' # Runs automatically every Sunday at midnight to check for updates!
+  # schedule:
+  #   - cron: '0 0 * * 0' # Runs automatically every Sunday at midnight to check for updates!
 
 # Global environment variables accessible across all jobs
 env:
