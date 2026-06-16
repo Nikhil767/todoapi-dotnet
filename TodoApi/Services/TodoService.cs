@@ -15,6 +15,8 @@ namespace TodoApi.Services
 
 		public async Task<TodoItem> CreateTodo(TodoItem todoItem)
 		{
+			if (todoItem is null || todoItem.Title?.Length < 1)
+				throw new ArgumentException("Invalid request dto");
 			var newId = todos.Count == 0 ? 1 : todos.Max(t => t.Id) + 1;
 			var todo = new TodoItem(newId, todoItem.Title, false);
 			todos.Add(todo);
@@ -27,7 +29,7 @@ namespace TodoApi.Services
 			var itemToDelete = todos.FirstOrDefault(x => x.Id == id);
 			if (itemToDelete is null)
 				throw new ArgumentException($"Invalid id:{id}");			 
-				isDeleted = todos.Remove(itemToDelete);			
+			isDeleted = todos.Remove(itemToDelete);			
 			return await Task.FromResult(isDeleted);
 		}
 
@@ -55,6 +57,8 @@ namespace TodoApi.Services
 			var existing = todos.FirstOrDefault(t => t.Id == id);
 			if (existing is null)
 				throw new ArgumentException($"Invalid id:{id}");
+			if (todoItem is null || todoItem.Title?.Length < 1)
+				throw new ArgumentException("Invalid request dto");
 			var updated = existing with
 			{
 				Title = todoItem.Title,
