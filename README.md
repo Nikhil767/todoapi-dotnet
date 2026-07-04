@@ -66,7 +66,7 @@ Below is a common endpoint set for a Todo API:
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/api/todos` | Get all todo items. |
-| GET | `/api/todos/{id}` | Get a single todo item by ID. |
+| GET | `/api/todos/{id}` | Get a single todo item by Id. |
 | POST | `/api/todos` | Create a new todo item. |
 | PUT | `/api/todos/{id}` | Update an existing todo item. |
 | DELETE | `/api/todos/{id}` | Delete a todo item. |
