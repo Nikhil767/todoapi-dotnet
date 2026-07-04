@@ -1,6 +1,6 @@
 # 📝 TodoApi - .NET 10 REST API
 
-[![.NET 10 & Docker CI/CD Pipeline](https://github.com/Nikhil767/todoapi-dotnet/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/Nikhil767/todoapi-dotnet/actions)
+[![.NET 10 & Docker CI/CD Pipeline](https://github.com/Nikhil767/todoapi-dotnet/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Nikhil767/todoapi-dotnet/actions)
 [![Docker Hub Image](https://img.shields.io/docker/v/learningm0nster/todoapi-dotnet?label=Docker%20Hub)](https://hub.docker.com/r/learningm0nster/todoapi-dotnet)
 
 A simple and extensible **Todo API** built with **ASP.NET Core** and **.NET 10**.  
