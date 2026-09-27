@@ -4,7 +4,7 @@ namespace TodoApi.ServiceInterface
 {
 	public interface ITodoService
 	{
-		Task<IEnumerable<TodoItem>> GetAll();
+		Task<List<TodoItem>> GetAll();
 		Task<TodoItem> Get(long id);
 		Task<TodoItem> CreateTodo(TodoItem todoItem);
 		Task<TodoItem> UpdateTodo(long id, TodoItem todoItem);

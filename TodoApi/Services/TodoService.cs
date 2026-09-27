@@ -47,7 +47,7 @@ namespace TodoApi.Services
 			return await Task.FromResult(existing);
 		}
 
-		public async Task<IEnumerable<TodoItem>> GetAll()
+		public async Task<List<TodoItem>> GetAll()
 		{
 			return await Task.FromResult(todos);
 		}
@@ -59,13 +59,18 @@ namespace TodoApi.Services
 				throw new ArgumentException($"Invalid id:{id}");
 			if (todoItem is null || todoItem.Title?.Length < 1)
 				throw new ArgumentException("Invalid request dto");
-			var updated = existing with
-			{
-				Title = todoItem.Title,
-				IsCompleted = todoItem.IsCompleted
-			};
-			todos.Remove(existing);
-			todos.Add(updated);
+
+			var updated = existing;
+			updated.Title = todoItem.Title;
+			updated.IsCompleted = todoItem.IsCompleted;
+
+			//var updated = existing with
+			//{
+			//	Title = todoItem.Title,
+			//	IsCompleted = todoItem.IsCompleted
+			//};
+			//todos.Remove(existing);
+			//todos.Add(updated);
 			return await Task.FromResult(updated);
 		}
 	}

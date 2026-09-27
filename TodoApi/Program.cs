@@ -5,10 +5,21 @@ using TodoApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSingleton<ISingletonService, SingletonService>();
+builder.Services.AddScoped<IScopedService, ScopedService>();
+builder.Services.AddTransient<ITransientService, TransientService>();
+
 builder.Services.AddScoped<ITodoService, TodoService>();
+builder.Services.AddScoped<ITesting, Testing>();
+//builder.Services.AddScoped<ITesting, Testing2>();
+builder.Services.AddKeyedScoped<ITest, TestA>("testA");
+builder.Services.AddKeyedScoped<ITest, TestB>("testB");
+builder.Services.AddKeyedScoped<ITest, TestC>("testC");
+
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+.AddXmlSerializerFormatters();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -44,6 +55,9 @@ builder.Services.AddRateLimiter(options =>
 	});
 });
 
+/// 3) Factory-Based Middleware
+builder.Services.AddScoped<FactoryExceptionMiddleware>();
+
 // set request size at Kestrel level 
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -51,6 +65,22 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 var app = builder.Build();
 
+app.UseExceptionHandler(errorApp =>
+{
+	errorApp.Run(async context =>
+	{
+		context.Response.ContentType = "application/json";
+		context.Response.StatusCode = 500;
+		var problem = new
+		{
+			error = "ServerError",
+			message = "An unexpected error occurred."
+		};
+		await context.Response.WriteAsJsonAsync(problem);
+	});
+});
+
+/// 2) Convention-based (Classic) Middleware
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
@@ -65,6 +95,17 @@ app.UseHttpsRedirection();
 app.UseRateLimiter();
 
 app.UseAuthorization();
+
+/// 1) Inline / Lambda Middleware
+app.Use(async (context, next) =>
+{
+	// Pre-processing
+	await next(context);
+	// Post-processing
+});
+
+/// 3) Factory-Based Middleware
+app.UseMiddleware<FactoryExceptionMiddleware>();
 
 app.MapControllers();
 
