@@ -67,8 +67,8 @@ builder.WebHost.ConfigureKestrel(options =>
 
 
 // 2. Registration in Program.cs For (Global Exception Hanlde Middleware)
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails(); // Integrates RFC 7807 ProblemDetails
+//builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+//builder.Services.AddProblemDetails(); // Integrates RFC 7807 ProblemDetails
 
 var app = builder.Build();
 
