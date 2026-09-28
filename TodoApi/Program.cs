@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Diagnostics;
 using System.Threading.RateLimiting;
 using TodoApi.Middleware;
 using TodoApi.ServiceInterface;
@@ -63,18 +64,30 @@ builder.WebHost.ConfigureKestrel(options =>
 {
 	options.Limits.MaxRequestBodySize = 3 * 1024 * 1024;
 });
+
+
+// 2. Registration in Program.cs For (Global Exception Hanlde Middleware)
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails(); // Integrates RFC 7807 ProblemDetails
+
 var app = builder.Build();
 
+// 3. Activates registered IExceptionHandler implementations For (Global Exception Hanlde Middleware)
+// app.UseExceptionHandler();
+
+/// Inline Exception Handling Middleware
 app.UseExceptionHandler(errorApp =>
 {
 	errorApp.Run(async context =>
 	{
+		var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
+		var exception = exceptionHandlerFeature?.Error;
 		context.Response.ContentType = "application/json";
 		context.Response.StatusCode = 500;
 		var problem = new
 		{
 			error = "ServerError",
-			message = "An unexpected error occurred."
+			message = exception?.Message ?? "An unexpected error occurred."
 		};
 		await context.Response.WriteAsJsonAsync(problem);
 	});
