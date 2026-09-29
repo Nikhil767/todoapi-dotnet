@@ -60,9 +60,12 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddScoped<FactoryExceptionMiddleware>();
 
 // set request size at Kestrel level 
+// protect against Denial of Service (DoS)
 builder.WebHost.ConfigureKestrel(options =>
 {
-	options.Limits.MaxRequestBodySize = 3 * 1024 * 1024;
+	options.Limits.MaxRequestBodySize = 3 * 1024 * 1024; // 3 MB
+	options.Limits.MaxConcurrentConnections = 100;
+	options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
 });
 
 
