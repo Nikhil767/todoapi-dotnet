@@ -60,15 +60,18 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddScoped<FactoryExceptionMiddleware>();
 
 // set request size at Kestrel level 
+// protect against Denial of Service (DoS)
 builder.WebHost.ConfigureKestrel(options =>
 {
-	options.Limits.MaxRequestBodySize = 3 * 1024 * 1024;
+	options.Limits.MaxRequestBodySize = 3 * 1024 * 1024; // 3 MB
+	options.Limits.MaxConcurrentConnections = 100;
+	options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
 });
 
 
 // 2. Registration in Program.cs For (Global Exception Hanlde Middleware)
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails(); // Integrates RFC 7807 ProblemDetails
+//builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+//builder.Services.AddProblemDetails(); // Integrates RFC 7807 ProblemDetails
 
 var app = builder.Build();
 
@@ -93,6 +96,18 @@ app.UseExceptionHandler(errorApp =>
 	});
 });
 
+// 2
+app.UseHttpsRedirection();
+
+// 3 Static Files
+app.UseStaticFiles();
+
+// 4
+app.UseRouting();
+
+// 5
+app.UseCors();
+
 /// 2) Convention-based (Classic) Middleware
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
@@ -103,10 +118,14 @@ if (app.Environment.IsDevelopment())
 }
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseHttpsRedirection();
 
+// 6
+app.UseResponseCaching();
+
+// 7
 app.UseRateLimiter();
 
+// 8
 app.UseAuthorization();
 
 /// 1) Inline / Lambda Middleware
