@@ -96,6 +96,9 @@ app.UseExceptionHandler(errorApp =>
 	});
 });
 
+// Static Files
+app.UseStaticFiles();
+
 /// 2) Convention-based (Classic) Middleware
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
