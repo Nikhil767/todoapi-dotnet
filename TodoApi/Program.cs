@@ -96,8 +96,17 @@ app.UseExceptionHandler(errorApp =>
 	});
 });
 
-// Static Files
+// 2
+app.UseHttpsRedirection();
+
+// 3 Static Files
 app.UseStaticFiles();
+
+// 4
+app.UseRouting();
+
+// 5
+app.UseCors();
 
 /// 2) Convention-based (Classic) Middleware
 app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -109,10 +118,14 @@ if (app.Environment.IsDevelopment())
 }
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseHttpsRedirection();
 
+// 6
+app.UseResponseCaching();
+
+// 7
 app.UseRateLimiter();
 
+// 8
 app.UseAuthorization();
 
 /// 1) Inline / Lambda Middleware
